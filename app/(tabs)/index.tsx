@@ -1,89 +1,114 @@
-import { Image } from 'expo-image';
-import { StyleSheet } from 'react-native';
+import { useState, useEffect } from 'react';
+import { StyleSheet, Pressable } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+
+const STORAGE_KEY = '@counter_value';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Something
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const [count, setCount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
+  // Load the counter value from AsyncStorage on mount
+  useEffect(() => {
+    loadCounter();
+  }, []);
+
+  const loadCounter = async () => {
+    try {
+      const value = await AsyncStorage.getItem(STORAGE_KEY);
+      if (value !== null) {
+        setCount(parseInt(value, 10));
+      }
+    } catch (error) {
+      console.error('Error loading counter:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveCounter = async (newValue: number) => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, newValue.toString());
+      setCount(newValue);
+    } catch (error) {
+      console.error('Error saving counter:', error);
+    }
+  };
+
+  const increment = () => {
+    saveCounter(count + 1);
+  };
+
+  const decrement = () => {
+    saveCounter(count - 1);
+  };
+
+  if (isLoading) {
+    return (
+      <ThemedView style={styles.container}>
+        <ThemedText>Loading...</ThemedText>
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
+    );
+  }
+
+  return (
+    <ThemedView style={styles.container}>
+      <ThemedText type="title" style={styles.title}>Counter</ThemedText>
+
+      <ThemedView style={styles.counterContainer}>
+        <ThemedText style={styles.counterText}>{count}</ThemedText>
       </ThemedView>
-    </ParallaxScrollView>
+
+      <ThemedView style={styles.buttonContainer}>
+        <Pressable style={styles.button} onPress={decrement}>
+          <ThemedText style={styles.buttonText}>-</ThemedText>
+        </Pressable>
+
+        <Pressable style={styles.button} onPress={increment}>
+          <ThemedText style={styles.buttonText}>+</ThemedText>
+        </Pressable>
+      </ThemedView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    padding: 20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  title: {
+    marginBottom: 40,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  counterContainer: {
+    marginBottom: 40,
+  },
+  counterText: {
+    fontSize: 72,
+    fontWeight: 'bold',
+    lineHeight: 80,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  button: {
+    backgroundColor: '#0a7ea4',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#fff',
+    lineHeight: 48,
   },
 });
