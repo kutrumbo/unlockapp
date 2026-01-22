@@ -63,6 +63,7 @@ expo-env.d.ts
 
 # Environment
 #
+.claude
 .env
 .env.local
 .env.*.local

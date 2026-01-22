@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { StyleSheet, Pressable } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Stack, useLocalSearchParams } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -12,12 +13,9 @@ interface Activities {
   music: boolean;
 }
 
-const getTodayKey = () => {
-  const today = new Date();
-  return today.toISOString().split('T')[0]; // YYYY-MM-DD
-};
+export default function EditDayScreen() {
+  const { date } = useLocalSearchParams<{ date: string }>();
 
-export default function HomeScreen() {
   const [activities, setActivities] = useState<Activities>({
     reading: false,
     exercising: false,
@@ -25,15 +23,9 @@ export default function HomeScreen() {
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load today's activities from AsyncStorage on mount
-  useEffect(() => {
-    loadActivities();
-  }, []);
-
   const loadActivities = async () => {
     try {
-      const todayKey = getTodayKey();
-      const value = await AsyncStorage.getItem(todayKey);
+      const value = await AsyncStorage.getItem(date);
       if (value !== null) {
         setActivities(JSON.parse(value));
       }
@@ -44,15 +36,21 @@ export default function HomeScreen() {
     }
   };
 
+  // Load the day's activities from AsyncStorage on mount
+  useEffect(() => {
+    loadActivities();
+  }, [date]);
+
   const toggleActivity = async (activity: keyof Activities) => {
     try {
       const newActivities = {
         ...activities,
         [activity]: !activities[activity],
       };
-      const todayKey = getTodayKey();
-      await AsyncStorage.setItem(todayKey, JSON.stringify(newActivities));
-      setActivities(newActivities);
+      if (date) {
+        await AsyncStorage.setItem(date, JSON.stringify(newActivities));
+        setActivities(newActivities);
+      }
     } catch (error) {
       console.error('Error saving activities:', error);
     }
@@ -61,6 +59,7 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <ThemedView style={styles.container}>
+        <Stack.Screen options={{ title: 'Edit Day' }} />
         <ThemedText>Loading...</ThemedText>
       </ThemedView>
     );
@@ -70,6 +69,8 @@ export default function HomeScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <Stack.Screen options={{ title: date || 'Edit Day' }} />
+
       <ThemedView style={styles.statusContainer}>
         <IconSymbol
           name={isUnlocked ? 'lock.open.fill' : 'lock.fill'}
